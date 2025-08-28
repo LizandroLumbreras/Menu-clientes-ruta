@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Clientes – La Proveedora</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --azul:#00416A; --resalte:#0c6cbd; --bg:linear-gradient(to right,#00416A,#E4E5E6);
+      --card:rgba(255,255,255,.9); --shadow:0 6px 18px rgba(0,0,0,.18);
+      --ok:#1e8e3e; --warn:#b36b00; --muted:rgba(0,0,0,.55);
+      --radius:14px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#111;
+      min-height:100vh; display:flex; flex-direction:column;
+    }
+    header{
+      position:sticky; top:0; z-index:10; background:rgba(0,0,0,.6); color:#fff;
+      padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:8px;
+      font-weight:700; font-size:18px; backdrop-filter:saturate(120%) blur(4px);
+    }
+    header img{ height:32px; filter: drop-shadow(0 0 2px rgba(0,0,0,.4)); }
+    main{ max-width:980px; margin:0 auto; padding:16px; width:100%; display:grid; gap:14px; }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    @media (max-width:900px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card h3{ margin:0; padding:12px 14px; background:#0c6cbd; color:#fff; font-size:16px; }
+    .card .body{ padding:14px; }
+
+    .row{ display:grid; grid-template-columns: 150px 1fr; gap:10px; align-items:center; margin-bottom:10px; }
+    .row label{ color:#333; font-size:13px; }
+    .row input, .row select, .row textarea{
+      width:100%; padding:10px 12px; border:1px solid #e3e6ea; border-radius:10px; font-size:14px; outline:none; background:#fff;
+    }
+    .row textarea{ resize:vertical; min-height:70px; }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; }
+    .btn{
+      border:none; border-radius:12px; padding:12px 16px; font-weight:700; color:#fff; cursor:pointer;
+      background:linear-gradient(180deg,#0c6cbd,#094d85);
+      box-shadow:var(--shadow);
+    }
+    .btn.sec{ background:linear-gradient(180deg,#666,#333); }
+    .btn.ok{ background:linear-gradient(180deg,#1e8e3e,#146329); }
+    .btn.warn{ background:linear-gradient(180deg,#b36b00,#8a5300); }
+
+    .list-tools{ display:flex; gap:10px; margin-bottom:10px; }
+    .list-tools input{ flex:1; padding:10px 12px; border:1px solid #e3e6ea; border-radius:10px; }
+    table{ width:100%; border-collapse:collapse; }
+    thead th{ background:#00416A; color:#fff; padding:10px; position:sticky; top:0; font-size:13px; }
+    tbody td{ border-top:1px solid #e7e7e7; padding:8px; font-size:14px; }
+    tbody tr:hover{ background:#f4f7fb; }
+    .muted{ color:var(--muted); }
+    .tag{ font-size:12px; padding:2px 8px; border-radius:999px; background:#eef4ff; color:#0c6cbd; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>Clientes – La Proveedora</span>
+    <img src="logo_proveedora.webp" alt="Logo">
+  </header>
+
+  <main>
+    <!-- Alta / Edición -->
+    <section class="card">
+      <h3>Alta / Edición de Cliente</h3>
+      <div class="body">
+        <div class="grid">
+          <div>
+            <div class="row"><label>Nombre*</label><input id="c_nombre" placeholder="Nombre fiscal o comercial" /></div>
+            <div class="row"><label>Alias</label><input id="c_alias" placeholder="Apodo / referencia" /></div>
+            <div class="row"><label>Teléfono</label><input id="c_tel" inputmode="tel" placeholder="10 dígitos" /></div>
+            <div class="row"><label>Email</label><input id="c_email" type="email" placeholder="correo@dominio.com" /></div>
+            <div class="row">
+              <label>¿Ocupa factura?</label>
+              <select id="c_factura">
+                <option value="no">No</option>
+                <option value="si">Sí</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="row"><label>RFC</label><input id="c_rfc" placeholder="RFC (si factura)" /></div>
+            <div class="row"><label>Dirección</label><input id="c_dir" placeholder="Calle y número" /></div>
+            <div class="row"><label>Ciudad</label><input id="c_ciudad" placeholder="Ciudad" /></div>
+            <div class="row"><label>Estado</label><input id="c_estado" placeholder="Estado" /></div>
+            <div class="row"><label>CP</label><input id="c_cp" inputmode="numeric" placeholder="Código Postal" /></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Notas</label>
+          <textarea id="c_notas" placeholder="Observaciones (opcional)"></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="btnGuardar" class="btn ok">Guardar / Actualizar</button>
+          <button id="btnLimpiar" class="btn sec">Limpiar</button>
+          <span id="estado" class="muted"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lista / Búsqueda -->
+    <section class="card">
+      <h3>Clientes registrados</h3>
+      <div class="body">
+        <div class="list-tools">
+          <input id="busca" placeholder="Buscar por nombre, alias, RFC o teléfono…" />
+          <button id="btnRecargar" class="btn">Recargar</button>
+        </div>
+        <div style="overflow:auto; max-height:55vh;">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;">Nombre</th>
+                <th>Alias</th>
+                <th>Teléfono</th>
+                <th>RFC</th>
+                <th>Factura</th>
+                <th>Ciudad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, setDoc, doc, getDocs, getDoc, serverTimestamp, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.firebasestorage.app",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    // 🔧 Ruta actual (ajusta si usas otra)
+    const rutaId = 'ruta_1';
+
+    // Helpers DOM
+    const $ = s=>document.querySelector(s);
+    const estado = $('#estado');
+    const tbody  = $('#tbody');
+
+    // refs a inputs
+    const inputs = {
+      nombre: $('#c_nombre'), alias: $('#c_alias'), tel: $('#c_tel'), email: $('#c_email'),
+      factura: $('#c_factura'), rfc: $('#c_rfc'), dir: $('#c_dir'),
+      ciudad: $('#c_ciudad'), estado: $('#c_estado'), cp: $('#c_cp'), notas: $('#c_notas')
+    };
+    let editingId = null;
+
+    // 🔗 atajo para la subcolección de clientes en la ruta
+    const colClientes = () => collection(db, 'rutas_venta', rutaId, 'clientes');
+
+    function limpiar(){
+      editingId = null;
+      for(const k in inputs) inputs[k].value = (k==='factura' ? 'no' : '');
+      estado.textContent = '';
+      inputs.nombre.focus();
+    }
+
+    const normalizaRFC = s => (s||'').toUpperCase().trim();
+    const normalizaTelefono = s => (s||'').replace(/\D+/g,'').trim();
+
+    async function guardar(){
+      const data = {
+        nombre: inputs.nombre.value.trim(),
+        alias: inputs.alias.value.trim(),
+        telefono: normalizaTelefono(inputs.tel.value),
+        email: (inputs.email.value||'').trim().toLowerCase(),
+        ocupa_factura: inputs.factura.value === 'si',
+        rfc: normalizaRFC(inputs.rfc.value),
+        direccion: inputs.dir.value.trim(),
+        ciudad: inputs.ciudad.value.trim(),
+        estado: inputs.estado.value.trim(),
+        cp: inputs.cp.value.trim(),
+        notas: inputs.notas.value.trim(),
+        actualizado: serverTimestamp(),
+        activo: true
+      };
+      if(!data.nombre){ alert('El nombre es obligatorio'); inputs.nombre.focus(); return; }
+      if(data.ocupa_factura && !data.rfc){ alert('Si ocupa factura, captura RFC.'); inputs.rfc.focus(); return; }
+
+      try{
+        if(editingId){
+          await setDoc(doc(colClientes(), editingId), data, { merge:true });
+          estado.textContent = 'Cliente actualizado ✔';
+        }else{
+          data.creado = serverTimestamp();
+          const ref = await addDoc(colClientes(), data);
+          editingId = ref.id;
+          estado.textContent = 'Cliente guardado ✔';
+        }
+        await cargarLista();
+      }catch(e){
+        console.error(e);
+        alert('No se pudo guardar. Revisa conexión.');
+      }
+    }
+
+    async function cargarLista(){
+      tbody.innerHTML = '';
+      // Nota: orderBy simple no requiere índice
+      const q = query(colClientes(), orderBy('nombre'));
+      const snap = await getDocs(q);
+      snap.forEach(d=>{
+        const c = d.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:left">${c.nombre||''}</td>
+          <td>${c.alias||''}</td>
+          <td>${c.telefono||''}</td>
+          <td>${c.rfc||''}</td>
+          <td>${c.ocupa_factura?'<span class="tag">Sí</span>':'No'}</td>
+          <td>${c.ciudad||''}</td>
+          <td>
+            <button data-id="${d.id}" class="btn" style="padding:6px 10px; border-radius:8px;">Editar</button>
+          </td>
+        `;
+        tr.querySelector('button').onclick = ()=> editar(d.id);
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function editar(id){
+      try{
+        const s = await getDoc(doc(colClientes(), id));
+        if(!s.exists()) return;
+        const c = s.data();
+        editingId = id;
+        inputs.nombre.value = c.nombre||'';
+        inputs.alias.value = c.alias||'';
+        inputs.tel.value   = c.telefono||'';
+        inputs.email.value = c.email||'';
+        inputs.factura.value = c.ocupa_factura ? 'si' : 'no';
+        inputs.rfc.value   = c.rfc||'';
+        inputs.dir.value   = c.direccion||'';
+        inputs.ciudad.value= c.ciudad||'';
+        inputs.estado.value= c.estado||'';
+        inputs.cp.value    = c.cp||'';
+        inputs.notas.value = c.notas||'';
+        estado.textContent = `Editando: ${c.nombre}`;
+        window.scrollTo({top:0, behavior:'smooth'});
+      }catch(e){ console.error(e); }
+    }
+
+    // búsqueda rápida en tabla
+    $('#busca').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase().trim();
+      tbody.querySelectorAll('tr').forEach(tr=>{
+        const txt = tr.innerText.toLowerCase();
+        tr.style.display = txt.includes(q) ? '' : 'none';
+      });
+    });
+
+    $('#btnGuardar').onclick = guardar;
+    $('#btnLimpiar').onclick = limpiar;
+    $('#btnRecargar').onclick = cargarLista;
+
+    // init
+    limpiar();
+    cargarLista();
+  </script>
+</body>
+</html>
