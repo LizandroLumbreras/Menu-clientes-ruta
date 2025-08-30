@@ -82,6 +82,35 @@
                 <option value="si">Sí</option>
               </select>
             </div>
+
+            <!-- Selección de Uso de CFDI, oculto por defecto -->
+            <div class="row" id="cfdiRow" style="display:none;">
+              <label>Uso de CFDI</label>
+              <select id="c_cfdi">
+                <option value="G01">Adquisición de mercancías</option>
+                <option value="G02">Devoluciones, descuentos o bonificaciones</option>
+                <option value="G03">Gastos en General</option>
+                <option value="I01">Construcciones</option>
+                <option value="I02">Mobiliario y equipo de oficina por construcciones</option>
+                <option value="I03">Equipo de transporte</option>
+                <option value="I04">Equipo de cómputo y accesorios</option>
+                <option value="I05">Datos, troqueles, moldes, matrices y herramientas</option>
+                <option value="I06">Comunicaciones telefónicas</option>
+                <option value="I07">Comunicaciones satelitales</option>
+                <option value="I08">Otras máquinas y equipo</option>
+                <option value="D01">Honorarios médicos, dentales y hospitalarios</option>
+                <option value="D02">Gastos médicos por incapacidad o discapacidad</option>
+                <option value="D03">Gastos funerales</option>
+                <option value="D04">Donativos</option>
+                <option value="D05">Intereses reales efectivamente pagados por créditos hipotecarios</option>
+                <option value="D06">Aportaciones voluntarias al SAR</option>
+                <option value="D07">Primas por seguros de gastos médicos</option>
+                <option value="D08">Gastos por transportación escolar obligatoria</option>
+                <option value="D09">Depósito en cuentas para ahorro, primas que tengan como base planes de pensiones</option>
+                <option value="D10">Pagos por servicios educativos (colegiaturas)</option>
+                <option value="P01">Por definir</option>
+              </select>
+            </div>
           </div>
           <div>
             <div class="row"><label>RFC</label><input id="c_rfc" placeholder="RFC (si factura)" /></div>
@@ -179,42 +208,58 @@
     const normalizaRFC = s => (s||'').toUpperCase().trim();
     const normalizaTelefono = s => (s||'').replace(/\D+/g,'').trim();
 
-    async function guardar(){
-      const data = {
-        nombre: inputs.nombre.value.trim(),
-        alias: inputs.alias.value.trim(),
-        telefono: normalizaTelefono(inputs.tel.value),
-        email: (inputs.email.value||'').trim().toLowerCase(),
-        ocupa_factura: inputs.factura.value === 'si',
-        rfc: normalizaRFC(inputs.rfc.value),
-        direccion: inputs.dir.value.trim(),
-        ciudad: inputs.ciudad.value.trim(),
-        estado: inputs.estado.value.trim(),
-        cp: inputs.cp.value.trim(),
-        notas: inputs.notas.value.trim(),
-        actualizado: serverTimestamp(),
-        activo: true
-      };
-      if(!data.nombre){ alert('El nombre es obligatorio'); inputs.nombre.focus(); return; }
-      if(data.ocupa_factura && !data.rfc){ alert('Si ocupa factura, captura RFC.'); inputs.rfc.focus(); return; }
+   // Obtener referencias
+const cfdiSelect = $('#c_cfdi');
+const facturaSelect = $('#c_factura');
+const cfdiRow = $('#cfdiRow');
 
-      try{
-        if(editingId){
-          await setDoc(doc(colClientes(), editingId), data, { merge:true });
-          estado.textContent = 'Cliente actualizado ✔';
-        }else{
-          data.creado = serverTimestamp();
-          const ref = await addDoc(colClientes(), data);
-          editingId = ref.id;
-          estado.textContent = 'Cliente guardado ✔';
-        }
-        await cargarLista();
-      }catch(e){
-        console.error(e);
-        alert('No se pudo guardar. Revisa conexión.');
-      }
+// Mostrar/ocultar el campo de Uso de CFDI basado en la opción de factura
+facturaSelect.addEventListener('change', () => {
+  if (facturaSelect.value === 'si') {
+    cfdiRow.style.display = 'block'; // Mostrar el campo de CFDI
+  } else {
+    cfdiRow.style.display = 'none'; // Ocultar el campo de CFDI
+  }
+});
+
+// Función para guardar el cliente con el uso de CFDI
+async function guardar(){
+  const data = {
+    nombre: inputs.nombre.value.trim(),
+    alias: inputs.alias.value.trim(),
+    telefono: normalizaTelefono(inputs.tel.value),
+    email: (inputs.email.value||'').trim().toLowerCase(),
+    ocupa_factura: facturaSelect.value === 'si', // Verificar si el cliente ocupa factura
+    uso_cfdi: facturaSelect.value === 'si' ? cfdiSelect.value : '', // Guardar el uso de CFDI solo si ocupa factura
+    rfc: normalizaRFC(inputs.rfc.value),
+    direccion: inputs.dir.value.trim(),
+    ciudad: inputs.ciudad.value.trim(),
+    estado: inputs.estado.value.trim(),
+    cp: inputs.cp.value.trim(),
+    notas: inputs.notas.value.trim(),
+    actualizado: serverTimestamp(),
+    activo: true
+  };
+
+  if(!data.nombre){ alert('El nombre es obligatorio'); inputs.nombre.focus(); return; }
+  if(data.ocupa_factura && !data.rfc){ alert('Si ocupa factura, captura RFC.'); inputs.rfc.focus(); return; }
+
+  try{
+    if(editingId){
+      await setDoc(doc(colClientes(), editingId), data, { merge:true });
+      estado.textContent = 'Cliente actualizado ✔';
+    }else{
+      data.creado = serverTimestamp();
+      const ref = await addDoc(colClientes(), data);
+      editingId = ref.id;
+      estado.textContent = 'Cliente guardado ✔';
     }
-
+    await cargarLista();
+  }catch(e){
+    console.error(e);
+    alert('No se pudo guardar. Revisa conexión.');
+  }
+}
     async function cargarLista(){
       tbody.innerHTML = '';
       // Nota: orderBy simple no requiere índice
