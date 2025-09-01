@@ -1,327 +1,47 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Clientes – La Proveedora</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Menú – La Proveedora</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    :root{
-      --azul:#00416A; --resalte:#0c6cbd; --bg:linear-gradient(to right,#00416A,#E4E5E6);
-      --card:rgba(255,255,255,.9); --shadow:0 6px 18px rgba(0,0,0,.18);
-      --ok:#1e8e3e; --warn:#b36b00; --muted:rgba(0,0,0,.55);
-      --radius:14px; --radius-sm:10px;
-    }
+    :root{ --azul:#00416A; --resalte:#0c6cbd; }
     *{box-sizing:border-box}
     body{
-      margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#111;
+      margin:0; font-family:'Poppins',system-ui,Arial; background:#f5f7fb; color:#0f172a;
       min-height:100vh; display:flex; flex-direction:column;
     }
-    header{
-      position:sticky; top:0; z-index:10; background:rgba(0,0,0,.6); color:#fff;
-      padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:8px;
-      font-weight:700; font-size:18px; backdrop-filter:saturate(120%) blur(4px);
-    }
-    header img{ height:32px; filter: drop-shadow(0 0 2px rgba(0,0,0,.4)); }
-    main{ max-width:980px; margin:0 auto; padding:16px; width:100%; display:grid; gap:14px; }
+    header{ padding:14px 16px; background:#00416A; color:#fff; text-align:center; font-weight:700; }
+    main{ max-width:900px; margin:0 auto; padding:20px; width:100%; }
 
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
-    @media (max-width:900px){ .grid{ grid-template-columns: 1fr; } }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    @media (max-width:800px){ .grid{ grid-template-columns: 1fr; } }
 
-    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
-    .card h3{ margin:0; padding:12px 14px; background:#0c6cbd; color:#fff; font-size:16px; }
-    .card .body{ padding:14px; }
-
-    .row{ display:grid; grid-template-columns: 150px 1fr; gap:10px; align-items:center; margin-bottom:10px; }
-    .row label{ color:#333; font-size:13px; }
-    .row input, .row select, .row textarea{
-      width:100%; padding:10px 12px; border:1px solid #e3e6ea; border-radius:10px; font-size:14px; outline:none; background:#fff;
-    }
-    .row textarea{ resize:vertical; min-height:70px; }
-    .actions{ display:flex; gap:10px; flex-wrap:wrap; }
-    .btn{
-      border:none; border-radius:12px; padding:12px 16px; font-weight:700; color:#fff; cursor:pointer;
-      background:linear-gradient(180deg,#0c6cbd,#094d85);
-      box-shadow:var(--shadow);
-    }
-    .btn.sec{ background:linear-gradient(180deg,#666,#333); }
-    .btn.ok{ background:linear-gradient(180deg,#1e8e3e,#146329); }
-    .btn.warn{ background:linear-gradient(180deg,#b36b00,#8a5300); }
-
-    .list-tools{ display:flex; gap:10px; margin-bottom:10px; }
-    .list-tools input{ flex:1; padding:10px 12px; border:1px solid #e3e6ea; border-radius:10px; }
-    table{ width:100%; border-collapse:collapse; }
-    thead th{ background:#00416A; color:#fff; padding:10px; position:sticky; top:0; font-size:13px; }
-    tbody td{ border-top:1px solid #e7e7e7; padding:8px; font-size:14px; }
-    tbody tr:hover{ background:#f4f7fb; }
-    .muted{ color:var(--muted); }
-    .tag{ font-size:12px; padding:2px 8px; border-radius:999px; background:#eef4ff; color:#0c6cbd; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+    .card h3{ margin:0 0 6px 0; font-size:18px; color:#0b2540; }
+    .card p{ margin:0 0 12px 0; color:#475569; font-size:14px; }
+    .btn{ display:inline-block; padding:10px 14px; border-radius:10px; background:#0c6cbd; color:#fff; text-decoration:none; font-weight:600; }
   </style>
 </head>
 <body>
-  <header>
-    <span>Clientes – La Proveedora</span>
-    <img src="logo_proveedora.webp" alt="Logo">
-  </header>
-
+  <header>Menú – La Proveedora</header>
   <main>
-    <!-- Alta / Edición -->
-    <section class="card">
-      <h3>Alta / Edición de Cliente</h3>
-      <div class="body">
-        <div class="grid">
-          <div>
-            <div class="row"><label>Nombre*</label><input id="c_nombre" placeholder="Nombre fiscal o comercial" /></div>
-            <div class="row"><label>Alias</label><input id="c_alias" placeholder="Apodo / referencia" /></div>
-            <div class="row"><label>Teléfono</label><input id="c_tel" inputmode="tel" placeholder="10 dígitos" /></div>
-            <div class="row"><label>Email</label><input id="c_email" type="email" placeholder="correo@dominio.com" /></div>
-            <div class="row">
-              <label>¿Ocupa factura?</label>
-              <select id="c_factura">
-                <option value="no">No</option>
-                <option value="si">Sí</option>
-              </select>
-            </div>
-
-            <!-- Selección de Uso de CFDI, oculto por defecto -->
-            <div class="row" id="cfdiRow" style="display:none;">
-              <label>Uso de CFDI</label>
-              <select id="c_cfdi">
-                <option value="G01">Adquisición de mercancías</option>
-                <option value="G02">Devoluciones, descuentos o bonificaciones</option>
-                <option value="G03">Gastos en General</option>
-                <option value="I01">Construcciones</option>
-                <option value="I02">Mobiliario y equipo de oficina por construcciones</option>
-                <option value="I03">Equipo de transporte</option>
-                <option value="I04">Equipo de cómputo y accesorios</option>
-                <option value="I05">Datos, troqueles, moldes, matrices y herramientas</option>
-                <option value="I06">Comunicaciones telefónicas</option>
-                <option value="I07">Comunicaciones satelitales</option>
-                <option value="I08">Otras máquinas y equipo</option>
-                <option value="D01">Honorarios médicos, dentales y hospitalarios</option>
-                <option value="D02">Gastos médicos por incapacidad o discapacidad</option>
-                <option value="D03">Gastos funerales</option>
-                <option value="D04">Donativos</option>
-                <option value="D05">Intereses reales efectivamente pagados por créditos hipotecarios</option>
-                <option value="D06">Aportaciones voluntarias al SAR</option>
-                <option value="D07">Primas por seguros de gastos médicos</option>
-                <option value="D08">Gastos por transportación escolar obligatoria</option>
-                <option value="D09">Depósito en cuentas para ahorro, primas que tengan como base planes de pensiones</option>
-                <option value="D10">Pagos por servicios educativos (colegiaturas)</option>
-                <option value="P01">Por definir</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <div class="row"><label>RFC</label><input id="c_rfc" placeholder="RFC (si factura)" /></div>
-            <div class="row"><label>Dirección</label><input id="c_dir" placeholder="Calle y número" /></div>
-            <div class="row"><label>Ciudad</label><input id="c_ciudad" placeholder="Ciudad" /></div>
-            <div class="row"><label>Estado</label><input id="c_estado" placeholder="Estado" /></div>
-            <div class="row"><label>CP</label><input id="c_cp" inputmode="numeric" placeholder="Código Postal" /></div>
-          </div>
-        </div>
-
-        <div class="row">
-          <label>Notas</label>
-          <textarea id="c_notas" placeholder="Observaciones (opcional)"></textarea>
-        </div>
-
-        <div class="actions">
-          <button id="btnGuardar" class="btn ok">Guardar / Actualizar</button>
-          <button id="btnLimpiar" class="btn sec">Limpiar</button>
-          <span id="estado" class="muted"></span>
-        </div>
+    <div class="grid">
+      <!-- Tarjeta 1: Clientes Ruta -->
+      <div class="card">
+        <h3>Clientes – Ruta</h3>
+        <p>Alta/edición y consulta de clientes para rutas de venta.</p>
+        <a class="btn" href="https://lizandrolumbreras.github.io/clientes-ruta/CLIENTES%20RUTA/index.html" target="_blank" rel="noopener">Abrir</a>
       </div>
-    </section>
 
-    <!-- Lista / Búsqueda -->
-    <section class="card">
-      <h3>Clientes registrados</h3>
-      <div class="body">
-        <div class="list-tools">
-          <input id="busca" placeholder="Buscar por nombre, alias, RFC o teléfono…" />
-          <button id="btnRecargar" class="btn">Recargar</button>
-        </div>
-        <div style="overflow:auto; max-height:55vh;">
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align:left;">Nombre</th>
-                <th>Alias</th>
-                <th>Teléfono</th>
-                <th>RFC</th>
-                <th>Factura</th>
-                <th>Ciudad</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
+      <!-- Tarjeta 2: Cortes Pendientes -->
+      <div class="card">
+        <h3>Cortes pendientes</h3>
+        <p>Listado y revisión de cortes de ruta aún no cerrados.</p>
+        <a class="btn" href="https://lizandrolumbreras.github.io/clientes-ruta/CORTES%20PENDIENTES/index.html" target="_blank" rel="noopener">Abrir</a>
       </div>
-    </section>
+    </div>
   </main>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, setDoc, doc, getDocs, getDoc, serverTimestamp, query, orderBy
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
-      authDomain: "inventariopv-643f1.firebaseapp.com",
-      projectId: "inventariopv-643f1",
-      storageBucket: "inventariopv-643f1.firebasestorage.app",
-      messagingSenderId: "96242533231",
-      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-
-    // 🔧 Ruta actual (ajusta si usas otra)
-    const rutaId = 'ruta_1';
-
-    // Helpers DOM
-    const $ = s=>document.querySelector(s);
-    const estado = $('#estado');
-    const tbody  = $('#tbody');
-
-    // refs a inputs
-    const inputs = {
-      nombre: $('#c_nombre'), alias: $('#c_alias'), tel: $('#c_tel'), email: $('#c_email'),
-      factura: $('#c_factura'), rfc: $('#c_rfc'), dir: $('#c_dir'),
-      ciudad: $('#c_ciudad'), estado: $('#c_estado'), cp: $('#c_cp'), notas: $('#c_notas')
-    };
-    let editingId = null;
-
-    // 🔗 atajo para la subcolección de clientes en la ruta
-    const colClientes = () => collection(db, 'rutas_venta', rutaId, 'clientes');
-
-    function limpiar(){
-      editingId = null;
-      for(const k in inputs) inputs[k].value = (k==='factura' ? 'no' : '');
-      estado.textContent = '';
-      inputs.nombre.focus();
-    }
-
-    const normalizaRFC = s => (s||'').toUpperCase().trim();
-    const normalizaTelefono = s => (s||'').replace(/\D+/g,'').trim();
-
-   // Obtener referencias
-const cfdiSelect = $('#c_cfdi');
-const facturaSelect = $('#c_factura');
-const cfdiRow = $('#cfdiRow');
-
-// Mostrar/ocultar el campo de Uso de CFDI basado en la opción de factura
-facturaSelect.addEventListener('change', () => {
-  if (facturaSelect.value === 'si') {
-    cfdiRow.style.display = 'block'; // Mostrar el campo de CFDI
-  } else {
-    cfdiRow.style.display = 'none'; // Ocultar el campo de CFDI
-  }
-});
-
-// Función para guardar el cliente con el uso de CFDI
-async function guardar(){
-  const data = {
-    nombre: inputs.nombre.value.trim(),
-    alias: inputs.alias.value.trim(),
-    telefono: normalizaTelefono(inputs.tel.value),
-    email: (inputs.email.value||'').trim().toLowerCase(),
-    ocupa_factura: facturaSelect.value === 'si', // Verificar si el cliente ocupa factura
-    uso_cfdi: facturaSelect.value === 'si' ? cfdiSelect.value : '', // Guardar el uso de CFDI solo si ocupa factura
-    rfc: normalizaRFC(inputs.rfc.value),
-    direccion: inputs.dir.value.trim(),
-    ciudad: inputs.ciudad.value.trim(),
-    estado: inputs.estado.value.trim(),
-    cp: inputs.cp.value.trim(),
-    notas: inputs.notas.value.trim(),
-    actualizado: serverTimestamp(),
-    activo: true
-  };
-
-  if(!data.nombre){ alert('El nombre es obligatorio'); inputs.nombre.focus(); return; }
-  if(data.ocupa_factura && !data.rfc){ alert('Si ocupa factura, captura RFC.'); inputs.rfc.focus(); return; }
-
-  try{
-    if(editingId){
-      await setDoc(doc(colClientes(), editingId), data, { merge:true });
-      estado.textContent = 'Cliente actualizado ✔';
-    }else{
-      data.creado = serverTimestamp();
-      const ref = await addDoc(colClientes(), data);
-      editingId = ref.id;
-      estado.textContent = 'Cliente guardado ✔';
-    }
-    await cargarLista();
-  }catch(e){
-    console.error(e);
-    alert('No se pudo guardar. Revisa conexión.');
-  }
-}
-    async function cargarLista(){
-      tbody.innerHTML = '';
-      // Nota: orderBy simple no requiere índice
-      const q = query(colClientes(), orderBy('nombre'));
-      const snap = await getDocs(q);
-      snap.forEach(d=>{
-        const c = d.data();
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="text-align:left">${c.nombre||''}</td>
-          <td>${c.alias||''}</td>
-          <td>${c.telefono||''}</td>
-          <td>${c.rfc||''}</td>
-          <td>${c.ocupa_factura?'<span class="tag">Sí</span>':'No'}</td>
-          <td>${c.ciudad||''}</td>
-          <td>
-            <button data-id="${d.id}" class="btn" style="padding:6px 10px; border-radius:8px;">Editar</button>
-          </td>
-        `;
-        tr.querySelector('button').onclick = ()=> editar(d.id);
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function editar(id){
-      try{
-        const s = await getDoc(doc(colClientes(), id));
-        if(!s.exists()) return;
-        const c = s.data();
-        editingId = id;
-        inputs.nombre.value = c.nombre||'';
-        inputs.alias.value = c.alias||'';
-        inputs.tel.value   = c.telefono||'';
-        inputs.email.value = c.email||'';
-        inputs.factura.value = c.ocupa_factura ? 'si' : 'no';
-        inputs.rfc.value   = c.rfc||'';
-        inputs.dir.value   = c.direccion||'';
-        inputs.ciudad.value= c.ciudad||'';
-        inputs.estado.value= c.estado||'';
-        inputs.cp.value    = c.cp||'';
-        inputs.notas.value = c.notas||'';
-        estado.textContent = `Editando: ${c.nombre}`;
-        window.scrollTo({top:0, behavior:'smooth'});
-      }catch(e){ console.error(e); }
-    }
-
-    // búsqueda rápida en tabla
-    $('#busca').addEventListener('input', (e)=>{
-      const q = e.target.value.toLowerCase().trim();
-      tbody.querySelectorAll('tr').forEach(tr=>{
-        const txt = tr.innerText.toLowerCase();
-        tr.style.display = txt.includes(q) ? '' : 'none';
-      });
-    });
-
-    $('#btnGuardar').onclick = guardar;
-    $('#btnLimpiar').onclick = limpiar;
-    $('#btnRecargar').onclick = cargarLista;
-
-    // init
-    limpiar();
-    cargarLista();
-  </script>
 </body>
 </html>
