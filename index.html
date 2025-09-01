@@ -4,28 +4,95 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Menú – La Proveedora</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="logo_proveedora.webp" rel="stylesheet"/>
   <style>
-    :root{ --azul:#00416A; --resalte:#0c6cbd; }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:'Poppins',system-ui,Arial; background:#f5f7fb; color:#0f172a;
-      min-height:100vh; display:flex; flex-direction:column;
+    :root{
+      --azul:#00416A; 
+      --resalte:#0c6cbd; 
+      --borde:#e6e9f0;
+      --fg:#0f172a; 
+      --muted:#475569;
+      --card:#ffffff;
+      --shadow:0 10px 22px rgba(0,0,0,.12);
+      --radius:14px;
     }
-    header{ padding:14px 16px; background:#00416A; color:#fff; text-align:center; font-weight:700; }
-    main{ max-width:900px; margin:0 auto; padding:20px; width:100%; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial;
+      color:var(--fg);
+      background:linear-gradient(135deg,#00416A 0%, #0c6cbd 35%, #E4E5E6 100%);
+      min-height:100vh; display:flex; flex-direction:column; position:relative; overflow-x:hidden;
+      /* Marca de agua */
+      --wm-size:min(70vw,700px);
+      --wm-opacity:.07;
+    }
+    /* Marca de agua centrada y fija */
+    body::before{
+      content:"";
+      position:fixed; inset:0; margin:auto;
+      width:var(--wm-size); height:var(--wm-size);
+      background:url('logo_proveedora.webp') center/contain no-repeat;
+      opacity:var(--wm-opacity);
+      pointer-events:none;
+      z-index:0;
+      filter:grayscale(10%) contrast(110%);
+      transform:translateY(10px);
+    }
 
-    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-    @media (max-width:800px){ .grid{ grid-template-columns: 1fr; } }
+    header{
+      position:sticky; top:0; z-index:5;
+      background:rgba(0,0,0,.45);
+      color:#fff; text-align:center; font-weight:700; letter-spacing:.3px;
+      padding:14px 16px;
+      backdrop-filter:saturate(120%) blur(6px);
+      box-shadow:0 4px 14px rgba(0,0,0,.22);
+    }
 
-    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
-    .card h3{ margin:0 0 6px 0; font-size:18px; color:#0b2540; }
-    .card p{ margin:0 0 12px 0; color:#475569; font-size:14px; }
-    .btn{ display:inline-block; padding:10px 14px; border-radius:10px; background:#0c6cbd; color:#fff; text-decoration:none; font-weight:600; }
+    main{
+      position:relative; z-index:1;
+      width:100%; max-width:900px; margin:22px auto; padding:0 18px 24px;
+    }
+
+    .grid{
+      display:grid; grid-template-columns: 1fr 1fr; gap:16px;
+    }
+    @media (max-width:800px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--borde);
+      border-radius:var(--radius);
+      padding:18px 16px;
+      box-shadow:var(--shadow);
+      transition:transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 14px 28px rgba(0,0,0,.16);
+      border-color:#d9e1f2;
+    }
+    .card h3{
+      margin:0 0 6px 0; font-size:18px; color:#0b2540;
+      display:flex; align-items:center; gap:8px;
+    }
+    .card p{
+      margin:0 0 14px 0; color:var(--muted); font-size:14px; line-height:1.45;
+    }
+    .btn{
+      display:inline-block; padding:11px 16px; border-radius:12px; 
+      background:linear-gradient(180deg,#0c6cbd,#094d85);
+      color:#fff; text-decoration:none; font-weight:600;
+      box-shadow:0 6px 16px rgba(12,108,189,.35);
+      transition:transform .12s ease, box-shadow .15s ease, opacity .15s ease;
+    }
+    .btn:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(12,108,189,.35); }
+    .btn:active{ transform:translateY(0); opacity:.95; }
   </style>
 </head>
 <body>
   <header>Menú – La Proveedora</header>
+
   <main>
     <div class="grid">
       <!-- Tarjeta 1: Clientes Ruta -->
@@ -39,6 +106,7 @@
       <div class="card">
         <h3>Cortes pendientes</h3>
         <p>Listado y revisión de cortes de ruta aún no cerrados.</p>
+        <!-- Si cambias el nombre del archivo a index.html, puedes usar solo .../CORTES%20PENDIENTES/ -->
         <a class="btn" href="https://lizandrolumbreras.github.io/clientes-ruta/CORTES%20PENDIENTES/index.html" target="_blank" rel="noopener">Abrir</a>
       </div>
     </div>
