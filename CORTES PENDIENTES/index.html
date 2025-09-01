@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Cortes Pendientes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body{
+      margin:0; font-family:'Poppins',sans-serif; background:#f2f4f7; color:#111;
+      display:flex; flex-direction:column; min-height:100vh;
+    }
+    header{ background:#00416A; color:#fff; padding:12px; font-weight:700; font-size:18px; }
+    main{ flex:1; padding:14px; display:flex; justify-content:center; }
+    .card{ width:100%; max-width:720px; background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.15); padding:12px; }
+    table{ width:100%; border-collapse:collapse; }
+    thead th{ background:#00416A; color:#fff; padding:8px; font-size:14px; text-align:left; }
+    td{ padding:8px; border-bottom:1px solid #eee; font-size:14px; }
+    td:last-child{ text-align:center; }
+    .btn{
+      border:none; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; font-weight:600; color:#fff;
+      background:linear-gradient(180deg,#8a5cff,#5b33cf);
+    }
+    .btn:hover{ opacity:0.9; }
+    #hintPendientes{ color:#666; font-size:14px; padding:8px; text-align:center; }
+  </style>
+</head>
+<body>
+  <header>Cortes Pendientes</header>
+  <main>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th style="text-align:right;">Tickets</th>
+            <th style="text-align:right;">Total</th>
+            <th style="text-align:center;">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyPendientes"></tbody>
+      </table>
+      <div id="hintPendientes" style="display:none;">No hay cortes pendientes 🎉</div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, query, where, orderBy, Timestamp, serverTimestamp } 
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "TU_APIKEY",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.appspot.com",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    const rutaId   = 'ruta_1';
+    const ATENDIO  = 'Juan Serrato';
+    const money = (n)=>'$'+(Number(n)||0).toFixed(2);
+    const pad2 = n => String(n).padStart(2,'0');
+    const toYYYYMMDD = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    function rangoUltimosDias(dias=30){
+      const end=new Date(); end.setHours(23,59,59,999);
+      const start=new Date(); start.setDate(start.getDate()-(dias-1)); start.setHours(0,0,0,0);
+      return {start,end};
+    }
+
+    async function calcularResumenDeDia(dateStr){
+      const [Y,M,D]=dateStr.split('-').map(Number);
+      const start=new Date(Y,M-1,D,0,0,0,0);
+      const end=new Date(Y,M-1,D,23,59,59,999);
+      const tsStart=Timestamp.fromDate(start), tsEnd=Timestamp.fromDate(end);
+
+      const ventasRef=collection(db,'rutas_venta',rutaId,'ventas');
+      const qv=query(ventasRef,where('fecha','>=',tsStart),where('fecha','<',tsEnd),orderBy('fecha','asc'));
+      const snap=await getDocs(qv);
+      let total=0,conteo=0; const desg={efectivo:0,tarjeta:0,transferencia:0,mixto:0};
+      snap.forEach(s=>{
+        const v=s.data(), t=Number(v.total||0);
+        total+=t; conteo++;
+        const m=(v.metodo_pago||'').toLowerCase();
+        if(m==='efectivo')desg.efectivo+=t;
+        else if(m==='tarjeta')desg.tarjeta+=t;
+        else if(m==='transferencia')desg.transferencia+=t;
+        else if(m==='mixto')desg.mixto+=t;
+      });
+      return {total,conteo,desg};
+    }
+
+    async function generarCorteParaDia(dateStr){
+      const {total,conteo,desg}=await calcularResumenDeDia(dateStr);
+      if(conteo===0){ alert("No hay ventas en "+dateStr); return; }
+      const corteRef=doc(db,'rutas_venta',rutaId,'cortes',dateStr);
+      await setDoc(corteRef,{fecha_dia:dateStr,total,tickets:conteo,desglose:desg,atendio:ATENDIO,creado:serverTimestamp()});
+      alert(`Corte de ${dateStr} registrado ✅`);
+      listarCortesPendientes();
+    }
+
+    async function listarCortesPendientes(){
+      const {start,end}=rangoUltimosDias(30);
+      const tsStart=Timestamp.fromDate(start), tsEnd=Timestamp.fromDate(end);
+
+      const ventasRef=collection(db,'rutas_venta',rutaId,'ventas');
+      const qv=query(ventasRef,where('fecha','>=',tsStart),where('fecha','<',tsEnd));
+      const snapV=await getDocs(qv);
+      const porDia=new Map();
+      snapV.forEach(s=>{
+        const v=s.data();
+        const d=v.fecha_dia||toYYYYMMDD((v.fecha&&v.fecha.toDate)?v.fecha.toDate():new Date(v.fecha_txt||Date.now()));
+        const t=Number(v.total||0);
+        const cur=porDia.get(d)||{total:0,tickets:0};
+        cur.total+=t; cur.tickets++; porDia.set(d,cur);
+      });
+
+      const cortesRef=collection(db,'rutas_venta',rutaId,'cortes');
+      const qc=query(cortesRef,where('fecha_dia','>=',toYYYYMMDD(start)),where('fecha_dia','<=',toYYYYMMDD(end)));
+      const snapC=await getDocs(qc);
+      const cerrados=new Set(); snapC.forEach(c=>{const x=c.data(); if(x&&x.fecha_dia)cerrados.add(x.fecha_dia);});
+
+      const pendientes=Array.from(porDia.entries()).filter(([d])=>!cerrados.has(d)).sort((a,b)=>a[0]<b[0]?1:-1);
+
+      const tbody=document.getElementById('tbodyPendientes'); tbody.innerHTML='';
+      const hint=document.getElementById('hintPendientes');
+      if(pendientes.length===0){hint.style.display='block'; return;} hint.style.display='none';
+
+      pendientes.forEach(([fecha_dia,data])=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${fecha_dia}</td>
+          <td style="text-align:right;">${data.tickets}</td>
+          <td style="text-align:right;">${money(data.total)}</td>
+          <td><button class="btn" data-dia="${fecha_dia}">Generar corte</button></td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('.btn').forEach(btn=>{
+        btn.addEventListener('click',ev=>generarCorteParaDia(ev.currentTarget.getAttribute('data-dia')));
+      });
+    }
+
+    listarCortesPendientes();
+  </script>
+</body>
+</html>
