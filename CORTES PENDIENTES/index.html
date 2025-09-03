@@ -172,7 +172,9 @@
 
       // ===== Construir ticket para imprimir =====
       const folioCorte = `C-${dateStr.replaceAll('-','')}`;
-      const fechaTxt = new Date().toLocaleString();
+      const [Y, M, D] = dateStr.split('-').map(Number);
+      const fechaCorte = new Date(Y, M - 1, D);
+      const fechaTxt = fechaCorte.toLocaleDateString() + ' 23:59';
       document.getElementById('tFolio').textContent   = `CORTE: ${folioCorte}`;
       document.getElementById('tFecha').textContent   = fechaTxt;
       document.getElementById('tAtendio').textContent = ATENDIO;
@@ -279,3 +281,4 @@
   </script>
 </body>
 </html>
+
