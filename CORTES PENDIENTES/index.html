@@ -21,8 +21,28 @@
       border:none; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:14px; font-weight:600; color:#fff;
       background:linear-gradient(180deg,#8a5cff,#5b33cf);
     }
-    .btn:hover{ opacity:0.9; }
+    .btn:hover{ opacity:.9; }
     #hintPendientes{ color:#666; font-size:14px; padding:8px; text-align:center; }
+
+    /* ===== Ticket de impresión ===== */
+    #ticketArea{ display:none; }
+    @media print{
+      :root{ --ticket-mm:72; --ticket-pad-mm:1; --ticket-font:18px; --line-height:1.08; }
+      @page{ size: calc(var(--ticket-mm) * 1mm) auto; margin:0; }
+      html,body{ background:#fff!important; height:auto!important; width:calc(var(--ticket-mm) * 1mm); margin:0!important; padding:0!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      body *{ visibility:hidden!important; }
+      #ticketArea, #ticketArea *{ visibility:visible!important; }
+      #ticketArea{ position:fixed; inset:0; display:block!important; background:#fff!important; padding:0; margin:0; z-index:99999; }
+      .ticket{ width:calc(var(--ticket-mm) * 1mm); margin:0 auto; padding:0 calc(var(--ticket-pad-mm) * 1mm);
+        font:var(--ticket-font)/var(--line-height) 'Poppins',system-ui,sans-serif; color:#000; }
+      .ticket .t-header{ text-align:center; margin:2px 0; }
+      .ticket hr{ border:none; border-top:1px dashed #999; margin:6px 0; }
+      .t-row{ display:flex; justify-content:space-between; gap:6px; margin:2px 0; white-space:nowrap; }
+      .t-desc{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
+      .t-imp{ flex:0 0 auto; text-align:right; margin-left:8px; white-space:nowrap; }
+      .t-strong{ font-size: calc(var(--ticket-font) + 2px); font-weight:700; }
+      .t-core,.t-core *{ font-size: calc(var(--ticket-font) - 3px); }
+    }
   </style>
 </head>
 <body>
@@ -43,6 +63,29 @@
       <div id="hintPendientes" style="display:none;">No hay cortes pendientes 🎉</div>
     </div>
   </main>
+
+  <!-- Ticket imprimible (corte) -->
+  <div id="ticketArea">
+    <div id="ticket" class="ticket">
+      <div class="t-header t-strong">La Proveedora</div>
+      <div class="t-header t-strong">Ruta de Venta</div>
+      <hr>
+      <div class="t-header t-core" id="tFolio"></div>
+      <div class="t-header t-core" id="tFecha"></div>
+      <div class="t-header t-core">Atendió: <span id="tAtendio"></span></div>
+      <div class="t-header t-core" id="tRuta"></div>
+      <hr>
+      <div class="t-core" id="tLineas"></div>
+      <hr>
+      <div class="t-core" style="text-align:right;">
+        <div class="t-row"><span class="t-desc">Subtotal</span><span class="t-imp" id="tSubtotal"></span></div>
+        <div class="t-row"><span class="t-desc">Impuestos</span><span class="t-imp" id="tImpuestos"></span></div>
+        <div class="t-row" style="font-weight:700;"><span class="t-desc">Total</span><span class="t-imp" id="tTotal"></span></div>
+      </div>
+      <hr>
+      <div class="t-header t-core" id="tNotas"></div>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -93,12 +136,98 @@
       return {total,conteo,desg};
     }
 
+    // ===== IMPRESIÓN + GUARDADO del corte (con Facturado / No facturado) =====
     async function generarCorteParaDia(dateStr){
-      const {total,conteo,desg}=await calcularResumenDeDia(dateStr);
-      if(conteo===0){ alert("No hay ventas en "+dateStr); return; }
+      // Resumen base (métodos de pago + conteo)
+      const { total: totalResumen, conteo, desg } = await calcularResumenDeDia(dateStr);
+      if (conteo === 0){ alert("No hay ventas en "+dateStr); return; }
+
+      // Releer ventas del día para separar facturado/no facturado y sumar impuestos
+      const [Y,M,D]=dateStr.split('-').map(Number);
+      const start=new Date(Y,M-1,D,0,0,0,0);
+      const end=new Date(Y,M-1,D,23,59,59,999);
+      const tsStart=Timestamp.fromDate(start), tsEnd=Timestamp.fromDate(end);
+
+      const ventasRef=collection(db,'rutas_venta',rutaId,'ventas');
+      const qv=query(ventasRef,where('fecha','>=',tsStart),where('fecha','<',tsEnd),orderBy('fecha','asc'));
+      const snap=await getDocs(qv);
+
+      let totFact=0, impFact=0, totNoFact=0, impNoFact=0;
+      snap.forEach(s=>{
+        const v=s.data();
+        const t   = Number(v.total||0);
+        const imp = Number(v.impuestos||0);
+        const ocupa = (v.cliente_ocupa_factura !== undefined)
+          ? !!v.cliente_ocupa_factura
+          : !!(v.cliente_info && v.cliente_info.ocupa_factura);
+        if(ocupa){ totFact+=t; impFact+=imp; }
+        else     { totNoFact+=t; impNoFact+=imp; }
+      });
+
+      const subFact     = +(totFact   - impFact).toFixed(2);
+      const subNoFact   = +(totNoFact - impNoFact).toFixed(2);
+      const subtotalDia = +(subFact + subNoFact).toFixed(2);
+      const impGlobal   = +(impFact + impNoFact).toFixed(2);
+      const totGlobal   = +(totFact + totNoFact).toFixed(2); // ≈ totalResumen
+
+      // ===== Construir ticket para imprimir =====
+      const folioCorte = `C-${dateStr.replaceAll('-','')}`;
+      const fechaTxt = new Date().toLocaleString();
+      document.getElementById('tFolio').textContent   = `CORTE: ${folioCorte}`;
+      document.getElementById('tFecha').textContent   = fechaTxt;
+      document.getElementById('tAtendio').textContent = ATENDIO;
+      document.getElementById('tRuta').textContent    = `Ruta: ${rutaId}`;
+
+      const tLineas=document.getElementById('tLineas');
+      tLineas.innerHTML='';
+
+      const mk  = (l,r)=>{const d=document.createElement('div'); d.className='t-row'; d.innerHTML=`<span class="t-desc">${l}</span><span class="t-imp">${money(r)}</span>`; return d;};
+      const sep = (t)=>{const d=document.createElement('div'); d.className='t-row'; d.style.fontWeight='700'; d.innerHTML=`<span class="t-desc">— ${t} —</span><span class="t-imp"></span>`; return d;};
+
+      // FACTURADO
+      tLineas.appendChild(sep('FACTURADO'));
+      tLineas.appendChild(mk('Subtotal',  subFact));
+      tLineas.appendChild(mk('Impuestos', impFact));
+      tLineas.appendChild(mk('Total',     totFact));
+
+      // NO FACTURADO
+      tLineas.appendChild(sep('NO FACTURADO'));
+      tLineas.appendChild(mk('Subtotal',  subNoFact));
+      tLineas.appendChild(mk('Impuestos', impNoFact));
+      tLineas.appendChild(mk('Total',     totNoFact));
+
+      // MÉTODOS DE PAGO
+      tLineas.appendChild(sep('MÉTODOS DE PAGO'));
+      tLineas.appendChild(mk('EFECTIVO',    desg.efectivo));
+      tLineas.appendChild(mk('TARJETA',     desg.tarjeta));
+      tLineas.appendChild(mk('TRANSFER',    desg.transferencia));
+      tLineas.appendChild(mk('MIXTO',       desg.mixto));
+
+      // Totales globales
+      document.getElementById('tSubtotal').textContent  = money(subtotalDia);
+      document.getElementById('tImpuestos').textContent = money(impGlobal);
+      document.getElementById('tTotal').textContent     = money(totGlobal);
+      document.getElementById('tNotas').textContent     = 'Fin de día';
+
+      // Imprimir
+      window.print();
+
+      // ===== Guardar en Firestore (mismo doc del corte) =====
       const corteRef=doc(db,'rutas_venta',rutaId,'cortes',dateStr);
-      await setDoc(corteRef,{fecha_dia:dateStr,total,tickets:conteo,desglose:desg,atendio:ATENDIO,creado:serverTimestamp()});
-      alert(`Corte de ${dateStr} registrado ✅`);
+      await setDoc(corteRef,{
+        fecha_dia: dateStr,
+        total: totGlobal,
+        subtotal_dia: subtotalDia,
+        impuestos_dia: impGlobal,
+        tickets: conteo,
+        desglose: desg,
+        facturado:   { subtotal: subFact,   impuestos: impFact,   total: totFact },
+        no_facturado:{ subtotal: subNoFact, impuestos: impNoFact, total: totNoFact },
+        atendio: ATENDIO,
+        creado: serverTimestamp()
+      }, { merge:true });
+
+      alert(`Corte de ${dateStr} registrado e impreso ✅`);
       listarCortesPendientes();
     }
 
@@ -106,6 +235,7 @@
       const {start,end}=rangoUltimosDias(30);
       const tsStart=Timestamp.fromDate(start), tsEnd=Timestamp.fromDate(end);
 
+      // Agregar por día desde ventas
       const ventasRef=collection(db,'rutas_venta',rutaId,'ventas');
       const qv=query(ventasRef,where('fecha','>=',tsStart),where('fecha','<',tsEnd));
       const snapV=await getDocs(qv);
@@ -118,6 +248,7 @@
         cur.total+=t; cur.tickets++; porDia.set(d,cur);
       });
 
+      // Días ya cerrados
       const cortesRef=collection(db,'rutas_venta',rutaId,'cortes');
       const qc=query(cortesRef,where('fecha_dia','>=',toYYYYMMDD(start)),where('fecha_dia','<=',toYYYYMMDD(end)));
       const snapC=await getDocs(qc);
@@ -143,6 +274,7 @@
       });
     }
 
+    // Inicial
     listarCortesPendientes();
   </script>
 </body>
