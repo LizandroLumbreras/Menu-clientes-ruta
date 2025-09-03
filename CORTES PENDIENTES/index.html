@@ -33,9 +33,16 @@
       body *{ visibility:hidden!important; }
       #ticketArea, #ticketArea *{ visibility:visible!important; }
       #ticketArea{ position:fixed; inset:0; display:block!important; background:#fff!important; padding:0; margin:0; z-index:99999; }
-      .ticket{ width:calc(var(--ticket-mm) * 1mm); margin:0 auto; padding:0 calc(var(--ticket-pad-mm) * 1mm);
-        font:var(--ticket-font)/var(--line-height) 'Poppins',system-ui,sans-serif; color:#000; }
+      .ticket{
+        width:calc(var(--ticket-mm) * 1mm);
+        margin:0 auto;
+        padding:0 calc(var(--ticket-pad-mm) * 1mm);
+        font:var(--ticket-font)/var(--line-height) 'Poppins',system-ui,sans-serif;
+        color:#000;
+        text-align:left;
+      }
       .ticket .t-header{ text-align:center; margin:2px 0; }
+      .ticket img{ display:inline-block; max-width:142px; height:auto; }
       .ticket hr{ border:none; border-top:1px dashed #999; margin:6px 0; }
       .t-row{ display:flex; justify-content:space-between; gap:6px; margin:2px 0; white-space:nowrap; }
       .t-desc{ flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
@@ -67,16 +74,31 @@
   <!-- Ticket imprimible (corte) -->
   <div id="ticketArea">
     <div id="ticket" class="ticket">
+      <!-- Encabezado con logo y datos del negocio -->
+      <div class="t-header"><img src="logo_proveedora.webp" alt="Logo La Proveedora"></div>
       <div class="t-header t-strong">La Proveedora</div>
       <div class="t-header t-strong">Ruta de Venta</div>
       <hr>
+      <div class="t-header t-core">MADERO 690 SUR, CENTRO</div>
+      <div class="t-header t-core">LINARES, NUEVO LEÓN, 67700</div>
+      <div class="t-header t-core">RFC: PDD-031204-KL5</div>
+      <div class="t-header t-core">TEL: (821) 2121805</div>
+      <div class="t-header t-core">RÉGIMEN GENERAL DE LEY</div>
+      <div class="t-header t-core">PERSONAS MORALES</div>
+      <hr>
+
+      <!-- Datos del corte -->
       <div class="t-header t-core" id="tFolio"></div>
       <div class="t-header t-core" id="tFecha"></div>
       <div class="t-header t-core">Atendió: <span id="tAtendio"></span></div>
       <div class="t-header t-core" id="tRuta"></div>
       <hr>
+
+      <!-- Secciones dinámicas -->
       <div class="t-core" id="tLineas"></div>
       <hr>
+
+      <!-- Totales -->
       <div class="t-core" style="text-align:right;">
         <div class="t-row"><span class="t-desc">Subtotal</span><span class="t-imp" id="tSubtotal"></span></div>
         <div class="t-row"><span class="t-desc">Impuestos</span><span class="t-imp" id="tImpuestos"></span></div>
@@ -89,7 +111,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, query, where, orderBy, Timestamp, serverTimestamp } 
+    import { getFirestore, collection, doc, setDoc, getDocs, query, where, orderBy, Timestamp, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -170,11 +192,11 @@
       const impGlobal   = +(impFact + impNoFact).toFixed(2);
       const totGlobal   = +(totFact + totNoFact).toFixed(2); // ≈ totalResumen
 
-// ===== Construir ticket para imprimir =====
-const folioCorte = `C-${dateStr.replaceAll('-','')}`;
-// Y, M, D ya fueron declarados arriba en esta misma función
-const fechaCorte = new Date(Y, M - 1, D);
-const fechaTxt = fechaCorte.toLocaleDateString() + ' 23:59';
+      // ===== Construir ticket para imprimir =====
+      const folioCorte = `C-${dateStr.replaceAll('-','')}`;
+      // Y, M, D ya fueron declarados arriba en esta misma función
+      const fechaCorte = new Date(Y, M - 1, D);
+      const fechaTxt = fechaCorte.toLocaleDateString() + ' 23:59';
       document.getElementById('tFolio').textContent   = `CORTE: ${folioCorte}`;
       document.getElementById('tFecha').textContent   = fechaTxt;
       document.getElementById('tAtendio').textContent = ATENDIO;
@@ -211,7 +233,8 @@ const fechaTxt = fechaCorte.toLocaleDateString() + ' 23:59';
       document.getElementById('tTotal').textContent     = money(totGlobal);
       document.getElementById('tNotas').textContent     = 'Fin de día';
 
-      // Imprimir
+      // Aseguramos que el DOM esté pintado antes de imprimir (opcional)
+      await new Promise(r => setTimeout(r, 50));
       window.print();
 
       // ===== Guardar en Firestore (mismo doc del corte) =====
@@ -281,6 +304,3 @@ const fechaTxt = fechaCorte.toLocaleDateString() + ' 23:59';
   </script>
 </body>
 </html>
-
-
-
